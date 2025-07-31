@@ -1,0 +1,264 @@
+// WarmTrial - PeopleOS for pre-HR startups
+// Module 1: Hiring Layer Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  type          UserType  @default(FOUNDER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  founderRoles  Role[]
+  candidateProfile Candidate?
+  sentMatches   Match[]   @relation("FounderMatches")
+  trialCreator  Trial[]   @relation("TrialCreator")
+  offers        Offer[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  skillsRequired Json   // Array of skills
+  workingStyle String  // remote, hybrid, onsite
+  timeZone    String
+  cultureFit  String   @db.Text
+  urgency     Urgency  @default(MEDIUM)
+  salaryMin   Int?
+  salaryMax   Int?
+  equityMin   Float?
+  equityMax   Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  founderId   String
+  founder     User     @relation(fields: [founderId], references: [id], onDelete: Cascade)
+  matches     Match[]
+}
+
+model Candidate {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  summary     String   @db.Text
+  skills      Json     // Array of skills
+  experience  String   @db.Text
+  location    String
+  timeZone    String
+  portfolioUrl String?
+  linkedinUrl String?
+  githubUrl   String?
+  availability String  // full-time, part-time, contract
+  expectedSalary Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matches     Match[]
+  vibeChecks  VibeCheck[]
+  trials      Trial[]
+}
+
+model Match {
+  id          String    @id @default(cuid())
+  matchScore  Float     // AI-generated match score (0-1)
+  status      MatchStatus @default(PENDING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  roleId      String
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  founderId   String
+  founder     User      @relation("FounderMatches", fields: [founderId], references: [id])
+
+  vibeChecks  VibeCheck[]
+  trials      Trial[]
+  offers      Offer[]
+
+  @@unique([roleId, candidateId])
+}
+
+model VibeCheck {
+  id          String   @id @default(cuid())
+  videoUrl    String?  // URL to uploaded video
+  responses   Json     // Q&A responses as JSON
+  status      VibeStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  matchId     String
+  match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+model Trial {
+  id            String     @id @default(cuid())
+  title         String
+  description   String     @db.Text
+  requirements  String     @db.Text
+  deliverables  String     @db.Text
+  timeline      String     // e.g., "3 days"
+  fee           Int        // Amount in cents
+  status        TrialStatus @default(PENDING_PAYMENT)
+  stripeSessionId String?  @unique
+  stripePaymentIntentId String? @unique
+  candidateFeedback String? @db.Text
+  founderFeedback String?   @db.Text
+  candidateRating Int?      // 1-5 stars
+  founderRating   Int?      // 1-5 stars
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  matchId       String
+  match         Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  candidateId   String
+  candidate     Candidate  @relation(fields: [candidateId], references: [id])
+  founderId     String
+  founder       User       @relation("TrialCreator", fields: [founderId], references: [id])
+
+  offers        Offer[]
+}
+
+model Offer {
+  id            String     @id @default(cuid())
+  title         String
+  type          OfferType  // CONTRACT or FULL_TIME
+  salary        Int?       // Annual salary in cents
+  hourlyRate    Int?       // Hourly rate in cents
+  equity        Float?     // Equity percentage
+  vestingSchedule String?  // e.g., "4 years, 1 year cliff"
+  benefits      Json?      // Benefits as JSON array
+  responsibilities String @db.Text
+  startDate     DateTime?
+  status        OfferStatus @default(DRAFT)
+  pdfUrl        String?    // Generated PDF URL  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  trialId       String?
+  trial         Trial?     @relation(fields: [trialId], references: [id])
+  matchId       String
+  match         Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  founderId     String
+  founder       User       @relation(fields: [founderId], references: [id])
+}
+
+model BenchmarkData {
+  id          String   @id @default(cuid())
+  role        String   // e.g., "Software Engineer"
+  level       String   // e.g., "Senior", "Mid", "Junior"
+  location    String   // e.g., "San Francisco", "Remote"
+  companyStage String  // e.g., "Seed", "Series A", "Series B"
+  salaryMin   Int      // Annual salary min in USD cents
+  salaryMax   Int      // Annual salary max in USD cents
+  equityMin   Float    // Equity min percentage
+  equityMax   Float    // Equity max percentage
+  updatedAt   DateTime @updatedAt
+
+  @@unique([role, level, location, companyStage])
+}
+
+// Enums
+enum UserType {
+  FOUNDER
+  CANDIDATE
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MatchStatus {
+  PENDING
+  VIBE_CHECK_SENT
+  VIBE_CHECK_COMPLETED
+  TRIAL_OFFERED
+  TRIAL_COMPLETED
+  OFFER_SENT
+  HIRED
+  REJECTED
+}
+
+enum VibeStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+enum TrialStatus {
+  PENDING_PAYMENT
+  PAYMENT_FAILED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferType {
+  CONTRACT
+  FULL_TIME
+}
+
+enum OfferStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
