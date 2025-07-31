@@ -283,8 +283,8 @@ export default function BenchmarkPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Available</h3>
                 <p className="text-gray-600 mb-4">
-                  We don't have benchmark data for this specific combination yet. 
-                  Try adjusting your filters or check back soon as we're constantly updating our database.
+                  We don&apos;t have benchmark data for this specific combination yet. 
+                  Try adjusting your filters or check back soon as we&apos;re constantly updating our database.
                 </p>
                 <div className="text-sm text-gray-500">
                   Showing data for {benchmarkData.length} role combinations

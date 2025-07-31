@@ -24,7 +24,7 @@ export default function VerifyRequest() {
             
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-700 mb-2">
-                <strong>Didn't receive the email?</strong>
+                <strong>Didn&apos;t receive the email?</strong>
               </p>
               <ul className="text-sm text-gray-600 space-y-1 text-left">
                 <li>• Check your spam folder</li>

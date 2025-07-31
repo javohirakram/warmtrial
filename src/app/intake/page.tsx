@@ -253,7 +253,7 @@ export default function IntakePage() {
                 value={formData.timeZone}
                 onChange={(e) => setFormData({ ...formData, timeZone: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., PST, EST, UTC+2, or 'Flexible'"
+                placeholder="e.g., PST, EST, UTC+2, or &apos;Flexible&apos;"
               />
             </div>
 

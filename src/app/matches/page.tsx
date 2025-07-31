@@ -155,7 +155,7 @@ export default function MatchesPage() {
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Candidate Matches</h1>
           <p className="text-gray-600 mt-2">
-            We found {matches.length} great candidates for{" "}
+            We found {matches.length} great candidates for{&quot; &quot;}
             {matches[0]?.role?.title && (
               <span className="font-semibold">{matches[0].role.title}</span>
             )}
